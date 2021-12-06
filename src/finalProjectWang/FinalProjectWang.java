@@ -38,9 +38,25 @@ public class FinalProjectWang extends Application{
 	double height;
 	HBox RecView;
 	
-	//data member for the binary search algorithm
-	int left;
-	int right;
+	// data members for the bubble sort algorithm
+	int bubbleCur;
+	int bubbleStep;
+	
+	// data member for the insertion sort algorithm
+	int insertionCur;
+	int insertionIterator;
+	
+	//data member for the merge sort algorithm
+	Random rand = new Random();
+	int low;
+	int high;
+	int step;
+	
+	// data members for the binary search algorithm
+	int binaryLeft;
+	int binaryRight;
+	
+	
 	
 	
 	public static void main( String[] args )
@@ -82,12 +98,17 @@ public class FinalProjectWang extends Application{
     // set up each individual buttons
     public void setUpButtons() {
     	bubbleSortInit(mButtons.get(0));
+    	insertionSortInit(mButtons.get(1));
+    	mergeSortInit(mButtons.get(2));
     	binarySearchInit(mButtons.get(4));
     }
     
     // set up functions for different buttons
     public void bubbleSortInit(Button b) {
     	b.setOnAction((ActionEvent e)-> {
+    		// stop the previous process
+    		dr.stop();
+    		
     		// set mode accordingly
     		mode = 1;
     		
@@ -150,8 +171,145 @@ public class FinalProjectWang extends Application{
     	});
     }
     
+    public void insertionSortInit(Button b) {
+    	b.setOnAction((ActionEvent e)-> {
+    		// stop the previous process
+    		dr.stop();
+    		
+    		// set mode accordingly
+    		mode = 2;
+    		
+    		//setup the window 
+    		root.getChildren().remove(display);
+    		root.getChildren().remove(detailView);
+    		display = new Pane();
+    		root.getChildren().add(display);
+    		display.setPrefSize(500,500);
+    		display.setLayoutX(500);
+    		detailView = new VBox();
+    		
+    		// a slider defining the scale of the input
+    		mSlider = new Slider();
+    		mSlider = new Slider(10,100,50);
+    		mSlider.setMajorTickUnit(10);
+    		mSlider.setSnapToTicks(true);
+    		mSlider.setShowTickMarks(true);
+    		mSlider.setShowTickLabels(true);
+    		detailView.getChildren().add(mSlider);
+    		
+    		// label for the slider
+    		Label sliderLabel = new Label();
+    		sliderLabel.setText("Input Size");
+    		detailView.getChildren().add(sliderLabel);
+    		
+    		// add some instructional labels
+    		instructionLabel = new Label();
+    		instructionLabel.setText("The sorted sublist is colored in green, \nand the current value is colored in yellow");
+    		detailView.getChildren().add(instructionLabel);
+    		
+    		//set up the visualization with default values
+    		setUpCanvas();
+    		
+    		// a start button, a step button and a reset button
+    		Button startButton = new Button();
+    		startButton.setText("Start");
+    		startButton.setOnAction(f -> {
+    			dr.start();
+    		});
+    		detailView.getChildren().add(startButton);
+    		
+    		Button stepButton = new Button();
+    		stepButton.setText("Step");
+    		stepButton.setOnAction((ActionEvent g)->{
+    			step();
+    		});
+    		detailView.getChildren().add(stepButton);
+    		
+    		Button resetButton = new Button();
+    		resetButton.setText("Reset");
+    		resetButton.setOnAction((ActionEvent h)->{
+    			dr.stop();
+    			setUpCanvas();
+    		});
+    		detailView.getChildren().add(resetButton);
+    		
+    		root.getChildren().add(detailView);
+    		detailView.setLayoutX(200);
+    	});
+    }
+    
+    public void mergeSortInit(Button b) {
+    	b.setOnAction((ActionEvent e)-> {
+    		// stop the previous process
+    		dr.stop();
+    		
+    		// set mode accordingly
+    		mode = 3;
+    		
+    		//setup the window 
+    		root.getChildren().remove(display);
+    		root.getChildren().remove(detailView);
+    		display = new Pane();
+    		root.getChildren().add(display);
+    		display.setPrefSize(500,500);
+    		display.setLayoutX(500);
+    		detailView = new VBox();
+    		
+    		// a slider defining the scale of the input
+    		mSlider = new Slider();
+    		mSlider = new Slider(10,100,50);
+    		mSlider.setMajorTickUnit(10);
+    		mSlider.setSnapToTicks(true);
+    		mSlider.setShowTickMarks(true);
+    		mSlider.setShowTickLabels(true);
+    		detailView.getChildren().add(mSlider);
+    		
+    		// label for the slider
+    		Label sliderLabel = new Label();
+    		sliderLabel.setText("Input Size");
+    		detailView.getChildren().add(sliderLabel);
+    		
+    		// add some instructional labels
+    		instructionLabel = new Label();
+    		instructionLabel.setText("Elements in the same list have the same color");
+    		detailView.getChildren().add(instructionLabel);
+    		
+    		//set up the visualization with default values
+    		setUpCanvas();
+    		
+    		// a start button, a step button and a reset button
+    		Button startButton = new Button();
+    		startButton.setText("Start");
+    		startButton.setOnAction(f -> {
+    			dr.start();
+    		});
+    		detailView.getChildren().add(startButton);
+    		
+    		Button stepButton = new Button();
+    		stepButton.setText("Step");
+    		stepButton.setOnAction((ActionEvent g)->{
+    			step();
+    		});
+    		detailView.getChildren().add(stepButton);
+    		
+    		Button resetButton = new Button();
+    		resetButton.setText("Reset");
+    		resetButton.setOnAction((ActionEvent h)->{
+    			dr.stop();
+    			setUpCanvas();
+    		});
+    		detailView.getChildren().add(resetButton);
+    		
+    		root.getChildren().add(detailView);
+    		detailView.setLayoutX(200);
+    	});
+    }
+    
     public void binarySearchInit(Button b) {
     	b.setOnAction((ActionEvent e)-> {
+    		// stop the previous process
+    		dr.stop();
+    		
     		// set mode accordingly
     		mode = 5;
     		
@@ -241,12 +399,78 @@ public class FinalProjectWang extends Application{
 			}
 			
 			//initialize a pointer, current rectangle
-			int cur = 0;
-			mRecs.get(cur).setFill(Color.RED);
-			mRecs.get(cur + 1).setFill(Color.RED);
+			bubbleCur = 0;
+			bubbleStep = 0;
+			mRecs.get(bubbleCur).setFill(Color.GREEN);
+			mRecs.get(bubbleCur + 1).setFill(Color.GREEN);
 			display.getChildren().add(RecView);
 			break;
     	
+    	case 2: // for insertion sort
+    		// remove the old result from detailView
+    		detailView.getChildren().remove(foundLabel);
+    		
+    		// get the value of the slider and generate the visilization
+    		display.getChildren().clear();
+    		inputSize = (int) mSlider.getValue();
+    		
+    		//generate and add rectangles
+			width = 500/inputSize;
+			height = 0;
+			RecView = new HBox();
+			mRecs = new ArrayList<>();
+			data = new ArrayList<>();
+			for(int i = 0; i < inputSize; ++i) {
+				height = r.nextDouble() * 500;
+				data.add(height);
+				Rectangle rec = new Rectangle(width,height);
+				mRecs.add(rec);
+			}
+			for(Rectangle i: mRecs) {
+				RecView.getChildren().add(i);
+			}
+			
+			// initialize two pointer, current rectangle, and the rectangle it's being compared with (which is on the left of the current rectangle)
+			insertionCur = 1;
+			insertionIterator = insertionCur - 1;
+			mRecs.get(insertionCur).setFill(Color.GREEN);
+			mRecs.get(insertionCur - 1).setFill(Color.GREEN);
+			display.getChildren().add(RecView);
+			break;
+			
+    	case 3: // for merge sort
+    		// remove the old result from detailView
+    		detailView.getChildren().remove(foundLabel);
+    		
+    		// get the value of the slider and generate the visilization
+    		display.getChildren().clear();
+    		inputSize = (int) mSlider.getValue();
+    		
+    		//generate and add rectangles
+			width = 500/inputSize;
+			height = 0;
+			RecView = new HBox();
+			mRecs = new ArrayList<>();
+			data = new ArrayList<>();
+			for(int i = 0; i < inputSize; ++i) {
+				height = r.nextDouble() * 500;
+				data.add(height);
+				Rectangle rec = new Rectangle(width,height);
+				rec.setFill(Color.rgb(rand.nextInt(255),rand.nextInt(255),rand.nextInt(255)));
+				mRecs.add(rec);
+			}
+			for(Rectangle i: mRecs) {
+				RecView.getChildren().add(i);
+			}
+			display.getChildren().add(RecView);
+			
+			// initiate the parameters
+			low = 0;
+			high = mRecs.size() - 1;
+			//System.out.println(high);
+			step = 1;
+			break;
+			
     	case 5: // for binary search
     		// remove the old result from detailView
     		detailView.getChildren().remove(foundLabel);
@@ -284,10 +508,10 @@ public class FinalProjectWang extends Application{
 			target = mRecs.get(index);
 			
 			// initiate two pointers: left and right
-			left = 0;
-			right = inputSize - 1;
-			mRecs.get(left).setFill(Color.YELLOW);
-			mRecs.get(right).setFill(Color.YELLOW);
+			binaryLeft = 0;
+			binaryRight = inputSize - 1;
+			mRecs.get(binaryLeft).setFill(Color.YELLOW);
+			mRecs.get(binaryRight).setFill(Color.YELLOW);
 			target.setFill(Color.WHITE);
 			
 			display.getChildren().add(RecView);
@@ -298,28 +522,204 @@ public class FinalProjectWang extends Application{
     // the inner driver class
     public class Driver extends AnimationTimer
     {
-    	  @Override
-       public void handle( long now ) {
-          step();
-       }
+    	@Override
+    	public void handle( long now ) {
+    		// a dummy for loop to slow the animation down
+    		for(int i =0; i< 50; ++i) {
+    			
+    		}
+    		step();
+    	}
     }
 
      // take a single step of the simulation
      public void step()
      {
      	switch (mode) {
-     		case 5: 
-     			BinarySearchStep();
-     			
+     	case 1:
+     		BubbleSortStep();
+     		break;
+     		
+     	case 2:
+     		InsertionSortStep();
+     		break;
+     	
+     	case 3:
+     		MergeSortStep();
+     		break;
+     	
+     	case 5: 
+     		BinarySearchStep();
+     		break;
      	}	
      }
      
      // different algorithms
-     public void BinarySearchStep() {
-    	 if(left > right) {
+     public void BubbleSortStep() {
+    	 mRecs.get(bubbleCur).setFill(Color.GREEN);
+    	 mRecs.get(bubbleCur + 1).setFill(Color.GREEN);
+		 if(mRecs.get(bubbleCur).getHeight() > mRecs.get(bubbleCur + 1).getHeight()) {
+    		 Rectangle temp = mRecs.get(bubbleCur);
+    		 mRecs.set(bubbleCur,mRecs.get(bubbleCur+1));
+    		 mRecs.set(bubbleCur+1,temp);
+    		 
+    		 RecView.getChildren().clear();
+    		 for(Rectangle i: mRecs) {
+    			 RecView.getChildren().add(i);
+    		 }
+    	 } 
+		 mRecs.get(bubbleCur).setFill(Color.BLACK);
+		 
+		// color the already sorted rectangles in green
+		 for(int i = mRecs.size() - bubbleStep; i < mRecs.size(); ++i) {
+			 mRecs.get(i).setFill(Color.GREEN);
+		 }
+		 bubbleCur ++;
+		 if(bubbleCur == mRecs.size() - 1 - bubbleStep) {
+			 bubbleCur = 0;
+			 bubbleStep ++;
+		 }
+		 if(bubbleStep == mRecs.size() - 1) {
+			 foundLabel = new Label();
+			 foundLabel.setText("Fully Sorted!");
+			 detailView.getChildren().add(foundLabel);
+			 mRecs.get(0).setFill(Color.GREEN);
+			 dr.stop();
+		 }
+     }
+     
+     public void InsertionSortStep() {
+    	 if(insertionCur == mRecs.size()) {
+    		 foundLabel = new Label();
+			 foundLabel.setText("Fully Sorted!");
+			 detailView.getChildren().add(foundLabel);
+			 mRecs.get(mRecs.size() - 1).setFill(Color.GREEN);
     		 dr.stop();
     	 } else {
-    		 int mid = (left + right) / 2;
+    		Rectangle key = mRecs.get(insertionCur);
+    		insertionIterator = insertionCur - 1;
+    		mRecs.get(insertionCur).setFill(Color.YELLOW);
+    		mRecs.get(insertionIterator).setFill(Color.YELLOW);
+    		while(insertionIterator >= 0 && key.getHeight() < mRecs.get(insertionIterator).getHeight()) {
+    			mRecs.set(insertionIterator + 1, mRecs.get(insertionIterator));
+    			insertionIterator --;
+    		}
+    		mRecs.set(insertionIterator + 1, key);
+    		for(int i = 0; i < insertionCur; ++i) {
+	   			mRecs.get(i).setFill(Color.GREEN);
+	   		 }
+    		RecView.getChildren().clear();
+	   		for(Rectangle i: mRecs) {
+	   			 RecView.getChildren().add(i);
+	   		 }
+	   		insertionCur ++;
+    	 }
+     }
+     
+     public void MergeSortStep() {
+    	 if(step > high - low) {
+    		 dr.stop();
+    	 } else {
+    		 for(int i = low; i < high; i += 2*step) {
+    			 int from = i;
+    			 int mid = Integer.min(i + step - 1, high);
+    			 int to = Integer.min(i + 2*step - 1, high);
+    			 System.out.println();
+    			 System.out.println("i: " + i);
+    			 System.out.println("Step: " + step);
+    			 System.out.println("From: " + from);
+    			 System.out.println("Mid: " + mid);
+    			 System.out.println("To: " + to);
+    			 Merge(from,mid,to);
+    		 }
+    		System.out.println(mRecs.size());
+    		RecView.getChildren().clear();
+ 	   		for(Rectangle i: mRecs) {
+ 	   			 RecView.getChildren().add(i);
+ 	   		 }
+    		 step *= 2;
+    	 }
+     }
+     
+     // helper function for merge sort
+     public void Merge(int from, int mid, int to) {
+    	 // two temperoary vectors
+    	 // left[p...q], right[q+1...r]
+    	 ArrayList<Rectangle> left = new ArrayList<>();
+    	 ArrayList<Rectangle> right = new ArrayList<>();
+    	 
+    	 for(int i = from; i <=mid; ++i) {
+    		 Rectangle temp = new Rectangle();
+    		 temp.setWidth(mRecs.get(i).getWidth());
+    		 temp.setHeight(mRecs.get(i).getHeight());
+    		 temp.setFill(mRecs.get(i).getFill());
+    		 left.add(temp);
+    	 }
+    	 for(int j = mid + 1; j <= to; ++ j) {
+    		 Rectangle temp = new Rectangle();
+    		 temp.setWidth(mRecs.get(j).getWidth());
+    		 temp.setHeight(mRecs.get(j).getHeight());
+    		 temp.setFill(mRecs.get(j).getFill());
+    		 right.add(temp);
+    	 }
+    	 
+    	 // two pointers for merging
+    	 int first = 0;
+    	 int second = 0;
+    	 int curr = from;
+    	 
+    	 // the merging
+    	 int x = mid - from + 1;
+    	 int y = to - (mid + 1) + 1;
+    	 while(first < x && second < y) {
+    		 System.out.println("Left height: " + left.get(first).getHeight());
+    		 System.out.println("Right height: " + right.get(second).getHeight());
+    		 if(left.get(first).getHeight()<=right.get(second).getHeight()) {
+    			 System.out.println("left");
+    			 Rectangle temp = new Rectangle();
+    			 temp.setWidth(left.get(first).getWidth());
+        		 temp.setHeight(left.get(first).getHeight());
+        		 temp.setFill(left.get(first).getFill());
+    			 mRecs.set(curr,temp);
+    			 first ++;
+    		 } else {
+    			 System.out.println("right");
+    			 Rectangle temp = new Rectangle();
+    			 temp.setWidth(right.get(second).getWidth());
+        		 temp.setHeight(right.get(second).getHeight());
+        		 temp.setFill(right.get(second).getFill());
+    			 mRecs.set(curr,temp);
+    			 second ++;
+    		 }
+    		 curr ++;
+    	 }
+    	 
+    	 // when we reach the end of either one of left and right, copy the rest into the original vector
+    	 while(first < x) {
+    		 Rectangle temp = new Rectangle();
+    		 temp.setWidth(left.get(first).getWidth());
+    		 temp.setHeight(left.get(first).getHeight());
+    		 temp.setFill(left.get(first).getFill());
+    		 mRecs.set(curr,temp);
+    		 first ++;
+    		 curr ++;
+    	 }
+    	 while(second < y) {
+    		 Rectangle temp = new Rectangle();
+    		 temp.setWidth(right.get(second).getWidth());
+    		 temp.setHeight(right.get(second).getHeight());
+    		 temp.setFill(right.get(second).getFill());
+    		 mRecs.set(curr,temp);
+    		 second ++;
+    		 curr ++;
+    	 }
+     }
+     
+     public void BinarySearchStep() {
+    	 if(binaryLeft> binaryRight) {
+    		 dr.stop();
+    	 } else {
+    		 int mid = (binaryLeft + binaryRight) / 2;
     		 if(mRecs.get(mid).getHeight() == target.getHeight()) {
     			 mRecs.get(mid).setFill(Color.RED);
     			 foundLabel = new Label();
@@ -328,15 +728,17 @@ public class FinalProjectWang extends Application{
     			 dr.stop();
     		 } else {
     			 if(mRecs.get(mid).getHeight() < target.getHeight()) {
-    				 mRecs.get(right).setFill(Color.BLACK);
-    				 right = mid;
+    				 mRecs.get(binaryRight).setFill(Color.BLACK);
+    				 binaryRight = mid;
     				 mRecs.get(mid).setFill(Color.YELLOW);
     			 } else {
-    				 mRecs.get(left).setFill(Color.BLACK);
-    				 left = mid;
-    				 mRecs.get(left).setFill(Color.YELLOW);
+    				 mRecs.get(binaryLeft).setFill(Color.BLACK);
+    				 binaryLeft = mid;
+    				 mRecs.get(binaryLeft).setFill(Color.YELLOW);
     			 }
     		 }
     	 }
      }
+     
+     
 }
