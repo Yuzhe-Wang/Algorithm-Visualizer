@@ -1,6 +1,8 @@
 package finalProjectWang;
 // a program to visualize different kinds of sorting and path finding algorithms
-//bubble sort, insertion sort, merge sort, quick sort, binary search, Dijkstra's algorithm, and A* 
+//bubble sort, insertion sort, merge sort, quick sort, binary search
+
+//All the buttons already have voice over enabled
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -8,22 +10,26 @@ import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.scene.shape.*;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.lang.reflect.Array;
 import java.util.*;
 
 import javafx.scene.paint.*;
 
 public class FinalProjectWang extends Application{
-	Random r;
 	Driver dr;
+	Random r;
 	VBox controlPanel;
-	ArrayList<String> algorithms = new ArrayList<>(Arrays.asList("Bubble Sort", "Insertion Sort", "Merge Sort", "Quick Sort", "Binary Search", "Dijkstra's Algorithm", "A* Pathfinding"));
+	ArrayList<String> algorithms = new ArrayList<>(Arrays.asList("Bubble Sort", "Insertion Sort", "Merge Sort", "Quick Sort", "Binary Search"));
 	ArrayList<Button> mButtons;
-	Pane root;
+	Group root;
 	VBox detailView;
 	int mode; // labeling which algorithm to run
 	Pane display;
@@ -37,69 +43,77 @@ public class FinalProjectWang extends Application{
 	double width;
 	double height;
 	HBox RecView;
-	
-	// data members for the bubble sort algorithm
-	int bubbleCur;
-	int bubbleStep;
-	
-	// data member for the insertion sort algorithm
-	int insertionCur;
-	int insertionIterator;
-	
-	//data member for the merge sort algorithm
-	Random rand = new Random();
-	int low;
-	int high;
-	int step;
-	
-	// data members for the binary search algorithm
-	int binaryLeft;
-	int binaryRight;
-	
-	
-	
+	AlgoData algo = new AlgoData();
+	boolean running;
 	
 	public static void main( String[] args )
 	{ launch(args);}
 	
 	// is called once when object is created
 	public void init() {
-        r = new Random();
         dr = new Driver();
+        r = new Random();
         mode = 0;
         data = new ArrayList<>();
         mRecs = new ArrayList<>();
+        running = false;
 	}
 	
     @Override
     public void start(Stage stage) {  
-        stage.setTitle("Sorting and Pathing Finding Visilization Tool");
-        root = new Pane();
+        stage.setTitle("Sorting Visilization Tool");
+        root = new Group();
         Scene scene = new Scene(root, 1000, 600);
         stage.setScene(scene);
         stage.show();
-        setUpPanel();
-        setUpButtons();
+        
+        setupBackgroundImage();
+        setupPanel();
+        setupButtons();
     }
     
-    // setting up the control panel
-    public void setUpPanel() {
+    // setup the background image
+    public void setupBackgroundImage() {
+    	Image image;
+		try {
+			image = new Image(new FileInputStream("background.jpeg"));
+			ImageView imageView = new ImageView(image);
+			imageView.setFitHeight(600); 
+		    imageView.setFitWidth(1000); 
+		    root.getChildren().add(imageView);
+		} catch (FileNotFoundException e) {
+			System.out.println("Here");
+		}
+    }
+    
+    // setup the control panel
+    public void setupPanel() {
     	controlPanel = new VBox();
     	mButtons = new ArrayList<>();
-    	for(int i = 0; i < 7; ++i) {
+    	for(int i = 0; i < 5; ++i) {
     		Button oneButton = new Button();
     		oneButton.setText(algorithms.get(i));
+    		oneButton.setPrefWidth(100);
+    		oneButton.setPrefHeight(50);
     		mButtons.add(oneButton);
     		controlPanel.getChildren().add(oneButton);
     	}
+    	controlPanel.setLayoutY(150);
     	root.getChildren().add(controlPanel);
     }
     
     // set up each individual buttons
-    public void setUpButtons() {
+    /* Attention!!
+     *  Yes, there will be a few duplicate codes for setting up the buttons.
+     *  But each algorithm differ from each other.
+     *  I still gave each algorighm its own init function so that the implementation is clear and adding new algorithms will be easier
+     */
+    
+    public void setupButtons() {
     	bubbleSortInit(mButtons.get(0));
     	insertionSortInit(mButtons.get(1));
     	mergeSortInit(mButtons.get(2));
+    	quickSortInit(mButtons.get(3));
     	binarySearchInit(mButtons.get(4));
     }
     
@@ -109,8 +123,9 @@ public class FinalProjectWang extends Application{
     		// stop the previous process
     		dr.stop();
     		
-    		// set mode accordingly
+    		// set mode and firstTime accordingly
     		mode = 1;
+    		algo.firstTime = true;
     		
     		// setup the window
     		root.getChildren().remove(display);
@@ -133,11 +148,14 @@ public class FinalProjectWang extends Application{
     		// label for the slider
     		Label sliderLabel = new Label();
     		sliderLabel.setText("Input Size");
+    		sliderLabel.setTextFill(Color.WHITE);
     		detailView.getChildren().add(sliderLabel);
     		
     		// add some instructional labels
     		instructionLabel = new Label();
-    		instructionLabel.setText("Current comparison are colored in red, \nand sorted rectangles are colored in green");
+    		instructionLabel.setText("Sorted rectangles are colored in blue,\nand unsorted rectangles are colored in black");
+    	    instructionLabel.setAccessibleText("Sorted rectangles are colored in blue, and unsorted rectangles are colored in black");
+    		instructionLabel.setTextFill(Color.WHITE);
     		detailView.getChildren().add(instructionLabel);
     		
     		//set up the visualization with default values
@@ -148,26 +166,62 @@ public class FinalProjectWang extends Application{
     		startButton.setText("Start");
     		startButton.setOnAction(f -> {
     			dr.start();
+    			running = true;
     		});
+    		startButton.setPrefWidth(100);
+    		startButton.setPrefHeight(50);
     		detailView.getChildren().add(startButton);
     		
     		Button stepButton = new Button();
     		stepButton.setText("Step");
     		stepButton.setOnAction((ActionEvent g)->{
-    			step();
+    			if(!running) {
+    				step();
+    			}
     		});
+    		stepButton.setPrefWidth(100);
+    		stepButton.setPrefHeight(50);
     		detailView.getChildren().add(stepButton);
     		
     		Button resetButton = new Button();
     		resetButton.setText("Reset");
     		resetButton.setOnAction((ActionEvent h)->{
     			dr.stop();
+    			running = false;
+    			algo.firstTime = true;
     			setUpCanvas();
     		});
+    		resetButton.setPrefWidth(100);
+    		resetButton.setPrefHeight(50);
     		detailView.getChildren().add(resetButton);
     		
+    		Button pauseButton = new Button();
+    		pauseButton.setText("Pause");
+    		pauseButton.setOnAction((ActionEvent h) -> {
+    			if(running) {
+    				dr.stop();
+    				running = false;
+    			}
+    		});
+    		pauseButton.setPrefWidth(100);
+    		pauseButton.setPrefHeight(50);
+    		detailView.getChildren().add(pauseButton);
+    		
+    		Button resumeButton = new Button();
+    		resumeButton.setText("Resume");
+    		resumeButton.setOnAction((ActionEvent h) -> {
+    			if(!running) {
+    				dr.start();
+    				running = true;
+    			}
+    		});
+    		resumeButton.setPrefWidth(100);
+    		resumeButton.setPrefHeight(50);
+    		detailView.getChildren().add(resumeButton);
+    		
     		root.getChildren().add(detailView);
-    		detailView.setLayoutX(200);
+    		detailView.setLayoutX(180);
+    		detailView.setLayoutY(100);
     	});
     }
     
@@ -176,8 +230,9 @@ public class FinalProjectWang extends Application{
     		// stop the previous process
     		dr.stop();
     		
-    		// set mode accordingly
+    		// set mode and firstTime accordingly
     		mode = 2;
+    		algo.firstTime = true;
     		
     		//setup the window 
     		root.getChildren().remove(display);
@@ -200,11 +255,14 @@ public class FinalProjectWang extends Application{
     		// label for the slider
     		Label sliderLabel = new Label();
     		sliderLabel.setText("Input Size");
+    		sliderLabel.setTextFill(Color.WHITE);
     		detailView.getChildren().add(sliderLabel);
     		
     		// add some instructional labels
     		instructionLabel = new Label();
-    		instructionLabel.setText("The sorted sublist is colored in green, \nand the current value is colored in yellow");
+    		instructionLabel.setText("The sorted sublist is colored in blue, \nand the current value is colored in yellow");
+    		instructionLabel.setAccessibleText("The sorted sublist is colored in blue, and the current value is colored in yellow");
+    		instructionLabel.setTextFill(Color.WHITE);
     		detailView.getChildren().add(instructionLabel);
     		
     		//set up the visualization with default values
@@ -215,26 +273,62 @@ public class FinalProjectWang extends Application{
     		startButton.setText("Start");
     		startButton.setOnAction(f -> {
     			dr.start();
+    			running = true;
     		});
+    		startButton.setPrefWidth(100);
+    		startButton.setPrefHeight(50);
     		detailView.getChildren().add(startButton);
     		
     		Button stepButton = new Button();
     		stepButton.setText("Step");
     		stepButton.setOnAction((ActionEvent g)->{
-    			step();
+    			if(!running) {
+    				step();
+    			}
     		});
+    		stepButton.setPrefWidth(100);
+    		stepButton.setPrefHeight(50);
     		detailView.getChildren().add(stepButton);
     		
     		Button resetButton = new Button();
     		resetButton.setText("Reset");
     		resetButton.setOnAction((ActionEvent h)->{
     			dr.stop();
+    			running = false;
+    			algo.firstTime = true;
     			setUpCanvas();
     		});
+    		resetButton.setPrefWidth(100);
+    		resetButton.setPrefHeight(50);
     		detailView.getChildren().add(resetButton);
     		
+    		Button pauseButton = new Button();
+    		pauseButton.setText("Pause");
+    		pauseButton.setOnAction((ActionEvent h) -> {
+    			if(running) {
+    				dr.stop();
+    				running = false;
+    			}
+    		});
+    		pauseButton.setPrefWidth(100);
+    		pauseButton.setPrefHeight(50);
+    		detailView.getChildren().add(pauseButton);
+    		
+    		Button resumeButton = new Button();
+    		resumeButton.setText("Resume");
+    		resumeButton.setOnAction((ActionEvent h) -> {
+    			if(!running) {
+    				dr.start();
+    				running = true;
+    			}
+    		});
+    		resumeButton.setPrefWidth(100);
+    		resumeButton.setPrefHeight(50);
+    		detailView.getChildren().add(resumeButton);
+    		
     		root.getChildren().add(detailView);
-    		detailView.setLayoutX(200);
+    		detailView.setLayoutX(180);
+    		detailView.setLayoutY(100);
     	});
     }
     
@@ -243,8 +337,9 @@ public class FinalProjectWang extends Application{
     		// stop the previous process
     		dr.stop();
     		
-    		// set mode accordingly
+    		// set mode and firstTime accordingly
     		mode = 3;
+    		algo.firstTime = true;
     		
     		//setup the window 
     		root.getChildren().remove(display);
@@ -267,11 +362,14 @@ public class FinalProjectWang extends Application{
     		// label for the slider
     		Label sliderLabel = new Label();
     		sliderLabel.setText("Input Size");
+    		sliderLabel.setTextFill(Color.WHITE);
     		detailView.getChildren().add(sliderLabel);
     		
     		// add some instructional labels
     		instructionLabel = new Label();
     		instructionLabel.setText("Elements in the same list have the same color");
+    		instructionLabel.setAccessibleText("Elements in the same list have the same color");
+    		instructionLabel.setTextFill(Color.WHITE);
     		detailView.getChildren().add(instructionLabel);
     		
     		//set up the visualization with default values
@@ -282,26 +380,169 @@ public class FinalProjectWang extends Application{
     		startButton.setText("Start");
     		startButton.setOnAction(f -> {
     			dr.start();
+    			running = true;
     		});
+    		startButton.setPrefWidth(100);
+    		startButton.setPrefHeight(50);
     		detailView.getChildren().add(startButton);
     		
     		Button stepButton = new Button();
     		stepButton.setText("Step");
     		stepButton.setOnAction((ActionEvent g)->{
-    			step();
+    			if(!running) {
+    				step();
+    			}
     		});
+    		stepButton.setPrefWidth(100);
+    		stepButton.setPrefHeight(50);
     		detailView.getChildren().add(stepButton);
     		
     		Button resetButton = new Button();
     		resetButton.setText("Reset");
     		resetButton.setOnAction((ActionEvent h)->{
     			dr.stop();
+    			running = false;
+    			algo.firstTime = true;
     			setUpCanvas();
     		});
+    		resetButton.setPrefWidth(100);
+    		resetButton.setPrefHeight(50);
     		detailView.getChildren().add(resetButton);
     		
+    		Button pauseButton = new Button();
+    		pauseButton.setText("Pause");
+    		pauseButton.setOnAction((ActionEvent h) -> {
+    			if(running) {
+    				dr.stop();
+    				running = false;
+    			}
+    		});
+    		pauseButton.setPrefWidth(100);
+    		pauseButton.setPrefHeight(50);
+    		detailView.getChildren().add(pauseButton);
+    		
+    		Button resumeButton = new Button();
+    		resumeButton.setText("Resume");
+    		resumeButton.setOnAction((ActionEvent h) -> {
+    			if(!running) {
+    				dr.start();
+    				running = true;
+    			}
+    		});
+    		resumeButton.setPrefWidth(100);
+    		resumeButton.setPrefHeight(50);
+    		detailView.getChildren().add(resumeButton);
+    		
     		root.getChildren().add(detailView);
-    		detailView.setLayoutX(200);
+    		detailView.setLayoutX(180);
+    		detailView.setLayoutY(100);
+    	});
+    }
+    
+    public void quickSortInit(Button b) {
+    	b.setOnAction((ActionEvent e)-> {
+    		// stop the previous process
+    		dr.stop();
+    		
+    		// set mode and firstTime accordingly
+    		mode = 4;
+    		algo.firstTime = true;
+    		
+    		//setup the window 
+    		root.getChildren().remove(display);
+    		root.getChildren().remove(detailView);
+    		display = new Pane();
+    		root.getChildren().add(display);
+    		display.setPrefSize(500,500);
+    		display.setLayoutX(500);
+    		detailView = new VBox();
+    		
+    		// a slider defining the scale of the input
+    		mSlider = new Slider();
+    		mSlider = new Slider(10,100,50);
+    		mSlider.setMajorTickUnit(10);
+    		mSlider.setSnapToTicks(true);
+    		mSlider.setShowTickMarks(true);
+    		mSlider.setShowTickLabels(true);
+    		detailView.getChildren().add(mSlider);
+    		
+    		// label for the slider
+    		Label sliderLabel = new Label();
+    		sliderLabel.setText("Input Size");
+    		sliderLabel.setTextFill(Color.WHITE);
+    		detailView.getChildren().add(sliderLabel);
+    		
+    		// add some instructional labels
+    		instructionLabel = new Label();
+    		instructionLabel.setText("Elements in the same sorted sublist \nare colored in the same color");
+    		instructionLabel.setAccessibleText("Elements in the same sorted sublist are colored in the same color");
+    		instructionLabel.setTextFill(Color.WHITE);
+    		detailView.getChildren().add(instructionLabel);
+    		
+    		//set up the visualization with default values
+    		setUpCanvas();
+    		
+    		// a start button, a step button and a reset button
+    		Button startButton = new Button();
+    		startButton.setText("Start");
+    		startButton.setOnAction(f -> {
+    			dr.start();
+    			running = true;
+    		});
+    		startButton.setPrefWidth(100);
+    		startButton.setPrefHeight(50);
+    		detailView.getChildren().add(startButton);
+    		
+    		Button stepButton = new Button();
+    		stepButton.setText("Step");
+    		stepButton.setOnAction((ActionEvent g)->{
+    			if(!running) {
+    				step();
+    			}
+    		});
+    		stepButton.setPrefWidth(100);
+    		stepButton.setPrefHeight(50);
+    		detailView.getChildren().add(stepButton);
+    		
+    		Button resetButton = new Button();
+    		resetButton.setText("Reset");
+    		resetButton.setOnAction((ActionEvent h)->{
+    			dr.stop();
+    			running = false;
+    			algo.firstTime = true;
+    			setUpCanvas();
+    		});
+    		resetButton.setPrefWidth(100);
+    		resetButton.setPrefHeight(50);
+    		detailView.getChildren().add(resetButton);
+    		
+    		Button pauseButton = new Button();
+    		pauseButton.setText("Pause");
+    		pauseButton.setOnAction((ActionEvent h) -> {
+    			if(running) {
+    				dr.stop();
+    				running = false;
+    			}
+    		});
+    		pauseButton.setPrefWidth(100);
+    		pauseButton.setPrefHeight(50);
+    		detailView.getChildren().add(pauseButton);
+    		
+    		Button resumeButton = new Button();
+    		resumeButton.setText("Resume");
+    		resumeButton.setOnAction((ActionEvent h) -> {
+    			if(!running) {
+    				dr.start();
+    				running = true;
+    			}
+    		});
+    		resumeButton.setPrefWidth(100);
+    		resumeButton.setPrefHeight(50);
+    		detailView.getChildren().add(resumeButton);
+    		
+    		root.getChildren().add(detailView);
+    		detailView.setLayoutX(180);
+    		detailView.setLayoutY(100);
     	});
     }
     
@@ -310,8 +551,9 @@ public class FinalProjectWang extends Application{
     		// stop the previous process
     		dr.stop();
     		
-    		// set mode accordingly
+    		// set mode and firstTime accordingly
     		mode = 5;
+    		algo.firstTime = true;
     		
     		//setup the window 
     		root.getChildren().remove(display);
@@ -334,11 +576,14 @@ public class FinalProjectWang extends Application{
     		// label for the slider
     		Label sliderLabel = new Label();
     		sliderLabel.setText("Input Size");
+    		sliderLabel.setTextFill(Color.WHITE);
     		detailView.getChildren().add(sliderLabel);
     		
     		// add some instructional labels
     		instructionLabel = new Label();
     		instructionLabel.setText("Current upper and lower bounds are colored in yellow, \nand the target is colored in white");
+    		instructionLabel.setAccessibleText("Current upper and lower bounds are colored in yellow,and the target is colored in white");
+    		instructionLabel.setTextFill(Color.WHITE);
     		detailView.getChildren().add(instructionLabel);
     		
     		//set up the visualization with default values
@@ -349,32 +594,68 @@ public class FinalProjectWang extends Application{
     		startButton.setText("Start");
     		startButton.setOnAction(f -> {
     			dr.start();
+    			running = true;
     		});
+    		startButton.setPrefWidth(100);
+    		startButton.setPrefHeight(50);
     		detailView.getChildren().add(startButton);
     		
     		Button stepButton = new Button();
     		stepButton.setText("Step");
     		stepButton.setOnAction((ActionEvent g)->{
-    			step();
+    			if(!running) {
+    				step();
+    			}
     		});
+    		stepButton.setPrefWidth(100);
+    		stepButton.setPrefHeight(50);
     		detailView.getChildren().add(stepButton);
     		
     		Button resetButton = new Button();
     		resetButton.setText("Reset");
     		resetButton.setOnAction((ActionEvent h)->{
     			dr.stop();
+    			running = false;
+    			algo.firstTime = true;
     			setUpCanvas();
     		});
+    		resetButton.setPrefWidth(100);
+    		resetButton.setPrefHeight(50);
     		detailView.getChildren().add(resetButton);
     		
+    		Button pauseButton = new Button();
+    		pauseButton.setText("Pause");
+    		pauseButton.setOnAction((ActionEvent h) -> {
+    			if(running) {
+    				dr.stop();
+    				running = false;
+    			}
+    		});
+    		pauseButton.setPrefWidth(100);
+    		pauseButton.setPrefHeight(50);
+    		detailView.getChildren().add(pauseButton);
+    		
+    		Button resumeButton = new Button();
+    		resumeButton.setText("Resume");
+    		resumeButton.setOnAction((ActionEvent h) -> {
+    			if(!running) {
+    				dr.start();
+    				running = true;
+    			}
+    		});
+    		resumeButton.setPrefWidth(100);
+    		resumeButton.setPrefHeight(50);
+    		detailView.getChildren().add(resumeButton);
+    		
     		root.getChildren().add(detailView);
-    		detailView.setLayoutX(200);
+    		detailView.setLayoutX(180);
+    		detailView.setLayoutY(100);
     	});
     }
     
     public void setUpCanvas() {
     	switch(mode) {
-    	case 1: // for bubble sort
+    	case 1: case 6: // for bubble sort
     		// remove the old result from detailView
     		detailView.getChildren().remove(foundLabel);
     		
@@ -392,6 +673,7 @@ public class FinalProjectWang extends Application{
 				height = r.nextDouble() * 500;
 				data.add(height);
 				Rectangle rec = new Rectangle(width,height);
+				rec.setFill(Color.BLACK);
 				mRecs.add(rec);
 			}
 			for(Rectangle i: mRecs) {
@@ -399,10 +681,8 @@ public class FinalProjectWang extends Application{
 			}
 			
 			//initialize a pointer, current rectangle
-			bubbleCur = 0;
-			bubbleStep = 0;
-			mRecs.get(bubbleCur).setFill(Color.GREEN);
-			mRecs.get(bubbleCur + 1).setFill(Color.GREEN);
+			algo.bubbleCur = 0;
+			algo.bubbleStep = 0;
 			display.getChildren().add(RecView);
 			break;
     	
@@ -424,6 +704,7 @@ public class FinalProjectWang extends Application{
 				height = r.nextDouble() * 500;
 				data.add(height);
 				Rectangle rec = new Rectangle(width,height);
+				rec.setFill(Color.BLACK);
 				mRecs.add(rec);
 			}
 			for(Rectangle i: mRecs) {
@@ -431,10 +712,10 @@ public class FinalProjectWang extends Application{
 			}
 			
 			// initialize two pointer, current rectangle, and the rectangle it's being compared with (which is on the left of the current rectangle)
-			insertionCur = 1;
-			insertionIterator = insertionCur - 1;
-			mRecs.get(insertionCur).setFill(Color.GREEN);
-			mRecs.get(insertionCur - 1).setFill(Color.GREEN);
+			algo.insertionCur = 1;
+			algo.insertionIterator = algo.insertionCur - 1;
+			mRecs.get(algo.insertionCur).setFill(Color.BLUE);
+			mRecs.get(algo.insertionCur - 1).setFill(Color.BLUE);
 			display.getChildren().add(RecView);
 			break;
 			
@@ -456,7 +737,7 @@ public class FinalProjectWang extends Application{
 				height = r.nextDouble() * 500;
 				data.add(height);
 				Rectangle rec = new Rectangle(width,height);
-				rec.setFill(Color.rgb(rand.nextInt(255),rand.nextInt(255),rand.nextInt(255)));
+				rec.setFill(Color.rgb(algo.rand.nextInt(255),algo.rand.nextInt(255),algo.rand.nextInt(255)));
 				mRecs.add(rec);
 			}
 			for(Rectangle i: mRecs) {
@@ -465,10 +746,43 @@ public class FinalProjectWang extends Application{
 			display.getChildren().add(RecView);
 			
 			// initiate the parameters
-			low = 0;
-			high = mRecs.size() - 1;
-			//System.out.println(high);
-			step = 1;
+			algo.low = 0;
+			algo.high = mRecs.size() - 1;
+			algo.step = 1;
+			break;
+			
+    	case 4: // for quick sort
+    		// remove the old result from detailView
+    		detailView.getChildren().remove(foundLabel);
+    		
+    		// get the value of the slider and generate the visilization
+    		display.getChildren().clear();
+    		inputSize = (int) mSlider.getValue();
+    		
+    		//generate and add rectangles
+			width = 500/inputSize;
+			height = 0;
+			RecView = new HBox();
+			mRecs = new ArrayList<>();
+			data = new ArrayList<>();
+			for(int i = 0; i < inputSize; ++i) {
+				height = r.nextDouble() * 500;
+				data.add(height);
+				Rectangle rec = new Rectangle(width,height);
+				rec.setFill(Color.rgb(algo.rand.nextInt(255),algo.rand.nextInt(255),algo.rand.nextInt(255)));
+				mRecs.add(rec);
+			}
+			for(Rectangle i: mRecs) {
+				RecView.getChildren().add(i);
+			}
+			display.getChildren().add(RecView);
+			
+			// initiate the parameters
+			algo.scale = 1;
+			algo.start = 0;
+			algo.end = mRecs.size() - 1;
+			algo.mStack = new Stack<>();
+			algo.mStack.push(new Pair(algo.start, algo.end));
 			break;
 			
     	case 5: // for binary search
@@ -508,10 +822,10 @@ public class FinalProjectWang extends Application{
 			target = mRecs.get(index);
 			
 			// initiate two pointers: left and right
-			binaryLeft = 0;
-			binaryRight = inputSize - 1;
-			mRecs.get(binaryLeft).setFill(Color.YELLOW);
-			mRecs.get(binaryRight).setFill(Color.YELLOW);
+			algo.binaryLeft = 0;
+			algo.binaryRight = inputSize - 1;
+			mRecs.get(algo.binaryLeft).setFill(Color.YELLOW);
+			mRecs.get(algo.binaryRight).setFill(Color.YELLOW);
 			target.setFill(Color.WHITE);
 			
 			display.getChildren().add(RecView);
@@ -524,17 +838,21 @@ public class FinalProjectWang extends Application{
     {
     	@Override
     	public void handle( long now ) {
-    		// a dummy for loop to slow the animation down
-    		for(int i =0; i< 50; ++i) {
-    			
-    		}
-    		step();
+    		if(algo.firstTime) {
+     			algo.lastTime = now;
+     			algo.firstTime = false;
+     		} else {
+     			double delta = (now - algo.lastTime) * 1.0e-9;
+     			if(delta > 0.5) {
+     				algo.lastTime = now;
+     				step();
+     			}
+     		}
     	}
     }
 
      // take a single step of the simulation
-     public void step()
-     {
+     public void step() {
      	switch (mode) {
      	case 1:
      		BubbleSortStep();
@@ -548,96 +866,172 @@ public class FinalProjectWang extends Application{
      		MergeSortStep();
      		break;
      	
+     	case 4:
+     		QuickSortStep();
+     		break;
+     		
      	case 5: 
      		BinarySearchStep();
+     		break;
+     		
+     	case 6:
+     		BubbleSortExtraDetailStep();
      		break;
      	}	
      }
      
      // different algorithms
      public void BubbleSortStep() {
-    	 mRecs.get(bubbleCur).setFill(Color.GREEN);
-    	 mRecs.get(bubbleCur + 1).setFill(Color.GREEN);
-		 if(mRecs.get(bubbleCur).getHeight() > mRecs.get(bubbleCur + 1).getHeight()) {
-    		 Rectangle temp = mRecs.get(bubbleCur);
-    		 mRecs.set(bubbleCur,mRecs.get(bubbleCur+1));
-    		 mRecs.set(bubbleCur+1,temp);
+    	 mRecs.get(algo.bubbleCur).setFill(Color.YELLOW);
+    	 mRecs.get(algo.bubbleCur + 1).setFill(Color.YELLOW);
+		 if(mRecs.get(algo.bubbleCur).getHeight() > mRecs.get(algo.bubbleCur + 1).getHeight()) {
+    		 Rectangle temp = mRecs.get(algo.bubbleCur);
+    		 mRecs.set(algo.bubbleCur,mRecs.get(algo.bubbleCur+1));
+    		 mRecs.set(algo.bubbleCur+1,temp);
     		 
     		 RecView.getChildren().clear();
     		 for(Rectangle i: mRecs) {
     			 RecView.getChildren().add(i);
     		 }
     	 } 
-		 mRecs.get(bubbleCur).setFill(Color.BLACK);
+		 mRecs.get(algo.bubbleCur).setFill(Color.BLACK);
 		 
-		// color the already sorted rectangles in green
-		 for(int i = mRecs.size() - bubbleStep; i < mRecs.size(); ++i) {
-			 mRecs.get(i).setFill(Color.GREEN);
+		 // color the already sorted rectangles in green
+		 for(int i = mRecs.size() - algo.bubbleStep; i < mRecs.size(); ++i) {
+			 mRecs.get(i).setFill(Color.BLUE);
 		 }
-		 bubbleCur ++;
-		 if(bubbleCur == mRecs.size() - 1 - bubbleStep) {
-			 bubbleCur = 0;
-			 bubbleStep ++;
+		 algo.bubbleCur ++;
+		 if(algo.bubbleCur == mRecs.size() - 1 - algo.bubbleStep) {
+			 algo.bubbleCur = 0;
+			 algo. bubbleStep ++;
 		 }
-		 if(bubbleStep == mRecs.size() - 1) {
+		 if(algo.bubbleStep == mRecs.size() - 1) {
 			 foundLabel = new Label();
 			 foundLabel.setText("Fully Sorted!");
 			 detailView.getChildren().add(foundLabel);
-			 mRecs.get(0).setFill(Color.GREEN);
+			 mRecs.get(0).setFill(Color.BLUE);
+			 dr.stop();
+		 }
+		 
+		 /*
+		  * The following is another version of bubble sort, which doesn't show the comparisons.
+		  * Leaving it here just for reference
+		  */
+//    	 if(algo.bubbleStep == mRecs.size() - 1) {
+//			 foundLabel = new Label();
+//			 foundLabel.setStyle("-fx-font: 24 arial;");
+//			 foundLabel.setText("Fully Sorted!");
+//			 foundLabel.setTextFill(Color.WHITE);
+//			 detailView.getChildren().add(foundLabel);
+//			 for(Rectangle i: mRecs) {
+//				i.setFill(Color.BLUE);
+//			 }
+//			 dr.stop();
+//		 } else {
+//	    	 for(algo.bubbleCur = 0; algo.bubbleCur <(mRecs.size() - algo.bubbleStep - 1); ++algo.bubbleCur) {
+//	    		 if(mRecs.get(algo.bubbleCur).getHeight() > mRecs.get(algo.bubbleCur + 1).getHeight()) {
+//	        		 Rectangle temp = mRecs.get(algo.bubbleCur);
+//	        		 mRecs.set(algo.bubbleCur,mRecs.get(algo.bubbleCur+1));
+//	        		 mRecs.set(algo.bubbleCur+1,temp);
+//	        	 }
+//	    	 }
+//	    	 // color the already sorted rectangles in blue
+//    		 for(int i = mRecs.size() - algo.bubbleStep; i < mRecs.size(); ++i) {
+//    			 mRecs.get(i).setFill(Color.BLUE);
+//    		 }
+//    		 RecView.getChildren().clear();
+//    		 for(Rectangle j: mRecs) {
+//    			 RecView.getChildren().add(j);
+//    		 }
+//    		 algo.bubbleStep ++;
+//		 } 
+     }
+     
+     public void BubbleSortExtraDetailStep() {
+    	 mRecs.get(algo.bubbleCur).setFill(Color.RED);
+    	 mRecs.get(algo.bubbleCur + 1).setFill(Color.RED);
+		 if(mRecs.get(algo.bubbleCur).getHeight() > mRecs.get(algo.bubbleCur + 1).getHeight()) {
+    		 Rectangle temp = mRecs.get(algo.bubbleCur);
+    		 mRecs.set(algo.bubbleCur,mRecs.get(algo.bubbleCur+1));
+    		 mRecs.set(algo.bubbleCur+1,temp);
+    		 
+    		 RecView.getChildren().clear();
+    		 for(Rectangle i: mRecs) {
+    			 RecView.getChildren().add(i);
+    		 }
+    	 } 
+		 mRecs.get(algo.bubbleCur).setFill(Color.BLACK);
+		 
+		// color the already sorted rectangles in blue
+		 for(int i = mRecs.size() - algo.bubbleStep; i < mRecs.size(); ++i) {
+			 mRecs.get(i).setFill(Color.BLUE);
+		 }
+		 algo.bubbleCur ++;
+		 if(algo.bubbleCur == mRecs.size() - 1 - algo.bubbleStep) {
+			 algo.bubbleCur = 0;
+			 algo.bubbleStep ++;
+		 }
+		 if(algo.bubbleStep == mRecs.size() - 1) {
+			 foundLabel = new Label();
+			 foundLabel.setStyle("-fx-font: 24 arial;");
+			 foundLabel.setText("Fully Sorted!");
+			 foundLabel.setTextFill(Color.WHITE);
+			 detailView.getChildren().add(foundLabel);
+			 mRecs.get(0).setFill(Color.BLUE);
 			 dr.stop();
 		 }
      }
      
      public void InsertionSortStep() {
-    	 if(insertionCur == mRecs.size()) {
+    	 if(algo.insertionCur == mRecs.size()) {
     		 foundLabel = new Label();
+    		 foundLabel.setStyle("-fx-font: 24 arial;");
 			 foundLabel.setText("Fully Sorted!");
+			 foundLabel.setTextFill(Color.WHITE);
 			 detailView.getChildren().add(foundLabel);
-			 mRecs.get(mRecs.size() - 1).setFill(Color.GREEN);
+			 mRecs.get(mRecs.size() - 1).setFill(Color.BLUE);
     		 dr.stop();
     	 } else {
-    		Rectangle key = mRecs.get(insertionCur);
-    		insertionIterator = insertionCur - 1;
-    		mRecs.get(insertionCur).setFill(Color.YELLOW);
-    		mRecs.get(insertionIterator).setFill(Color.YELLOW);
-    		while(insertionIterator >= 0 && key.getHeight() < mRecs.get(insertionIterator).getHeight()) {
-    			mRecs.set(insertionIterator + 1, mRecs.get(insertionIterator));
-    			insertionIterator --;
+    		Rectangle key = mRecs.get(algo.insertionCur);
+    		algo.insertionIterator = algo.insertionCur - 1;
+    		mRecs.get(algo.insertionCur).setFill(Color.YELLOW);
+    		mRecs.get(algo.insertionIterator).setFill(Color.YELLOW);
+    		while(algo.insertionIterator >= 0 && key.getHeight() < mRecs.get(algo.insertionIterator).getHeight()) {
+    			mRecs.set(algo.insertionIterator + 1, mRecs.get(algo.insertionIterator));
+    			algo.insertionIterator --;
     		}
-    		mRecs.set(insertionIterator + 1, key);
-    		for(int i = 0; i < insertionCur; ++i) {
-	   			mRecs.get(i).setFill(Color.GREEN);
+    		mRecs.set(algo.insertionIterator + 1, key);
+    		for(int i = 0; i < algo.insertionCur; ++i) {
+	   			mRecs.get(i).setFill(Color.BLUE);
 	   		 }
     		RecView.getChildren().clear();
 	   		for(Rectangle i: mRecs) {
 	   			 RecView.getChildren().add(i);
 	   		 }
-	   		insertionCur ++;
+	   		algo.insertionCur ++;
     	 }
      }
      
      public void MergeSortStep() {
-    	 if(step > high - low) {
+    	 if(algo.step > algo.high - algo.low) {
+    		 foundLabel = new Label();
+    		 foundLabel.setStyle("-fx-font: 24 arial;");
+			 foundLabel.setText("Fully Sorted!");
+			 foundLabel.setTextFill(Color.WHITE);
+			 detailView.getChildren().add(foundLabel);
     		 dr.stop();
     	 } else {
-    		 for(int i = low; i < high; i += 2*step) {
+    		 for(int i = algo.low; i < algo.high; i += 2*algo.step) {
     			 int from = i;
-    			 int mid = Integer.min(i + step - 1, high);
-    			 int to = Integer.min(i + 2*step - 1, high);
-    			 System.out.println();
-    			 System.out.println("i: " + i);
-    			 System.out.println("Step: " + step);
-    			 System.out.println("From: " + from);
-    			 System.out.println("Mid: " + mid);
-    			 System.out.println("To: " + to);
+    			 int mid = Integer.min(i + algo.step - 1, algo.high);
+    			 int to = Integer.min(i + 2*algo.step - 1, algo.high);
     			 Merge(from,mid,to);
     		 }
-    		System.out.println(mRecs.size());
     		RecView.getChildren().clear();
  	   		for(Rectangle i: mRecs) {
  	   			 RecView.getChildren().add(i);
  	   		 }
-    		 step *= 2;
+    		 algo.step *= 2;
     	 }
      }
      
@@ -671,23 +1065,32 @@ public class FinalProjectWang extends Application{
     	 // the merging
     	 int x = mid - from + 1;
     	 int y = to - (mid + 1) + 1;
+    	 
+    	 // we also need to "merge" the rectangle's color
+    	 Paint mPaint;
+    	 if(first < x && second < y) {
+    		 if(left.get(first).getHeight() <= right.get(second).getHeight()) {
+        		 mPaint = left.get(first).getFill();
+        	 } else {
+        		 mPaint = right.get(second).getFill();
+        	 }
+    	 } else {
+    		 mPaint = mRecs.get(from).getFill();
+    	 }
+    	 
     	 while(first < x && second < y) {
-    		 System.out.println("Left height: " + left.get(first).getHeight());
-    		 System.out.println("Right height: " + right.get(second).getHeight());
     		 if(left.get(first).getHeight()<=right.get(second).getHeight()) {
-    			 System.out.println("left");
     			 Rectangle temp = new Rectangle();
     			 temp.setWidth(left.get(first).getWidth());
         		 temp.setHeight(left.get(first).getHeight());
-        		 temp.setFill(left.get(first).getFill());
+        		 temp.setFill(mPaint);
     			 mRecs.set(curr,temp);
     			 first ++;
     		 } else {
-    			 System.out.println("right");
     			 Rectangle temp = new Rectangle();
     			 temp.setWidth(right.get(second).getWidth());
         		 temp.setHeight(right.get(second).getHeight());
-        		 temp.setFill(right.get(second).getFill());
+        		 temp.setFill(mPaint);
     			 mRecs.set(curr,temp);
     			 second ++;
     		 }
@@ -699,7 +1102,7 @@ public class FinalProjectWang extends Application{
     		 Rectangle temp = new Rectangle();
     		 temp.setWidth(left.get(first).getWidth());
     		 temp.setHeight(left.get(first).getHeight());
-    		 temp.setFill(left.get(first).getFill());
+    		 temp.setFill(mPaint);
     		 mRecs.set(curr,temp);
     		 first ++;
     		 curr ++;
@@ -708,37 +1111,102 @@ public class FinalProjectWang extends Application{
     		 Rectangle temp = new Rectangle();
     		 temp.setWidth(right.get(second).getWidth());
     		 temp.setHeight(right.get(second).getHeight());
-    		 temp.setFill(right.get(second).getFill());
+    		 temp.setFill(mPaint);
     		 mRecs.set(curr,temp);
     		 second ++;
     		 curr ++;
     	 }
      }
      
-     public void BinarySearchStep() {
-    	 if(binaryLeft> binaryRight) {
+     public void QuickSortStep() {
+    	 if(algo.mStack.empty()) {
+    		 algo.scale = 1;
+    		 foundLabel = new Label();
+			 foundLabel.setText("Fully Sorted!");
+			 foundLabel.setStyle("-fx-font: 24 arial;");
+			 foundLabel.setTextFill(Color.WHITE);
+			 detailView.getChildren().add(foundLabel);
     		 dr.stop();
     	 } else {
-    		 int mid = (binaryLeft + binaryRight) / 2;
+    		 int temp = 1;
+    		 for(int i = 0; i < algo.scale; ++i) {
+    			 if(algo.mStack.empty()) {
+    	    		 algo.scale = 1;
+    	    		 foundLabel = new Label();
+    				 foundLabel.setText("Fully Sorted!");
+    				 foundLabel.setStyle("-fx-font: 24 arial;");
+    				 foundLabel.setTextFill(Color.WHITE);
+    				 detailView.getChildren().add(foundLabel);
+    	    		 dr.stop();
+    	    		 break;
+    			 }
+	    		 algo.start = algo.mStack.peek().getX();
+	    		 algo.end = algo.mStack.peek().getY();
+	    		 algo.mStack.pop();
+	    		 
+	    		 int pivot = QuickSortPartition(algo.start, algo.end);
+	    		 
+	    		 if(pivot - 1 > algo.start) {
+	    			 algo.mStack.push(new Pair(algo.start,pivot - 1));
+	    			 temp += 1;
+	    		 } 
+	    		 if(pivot + 1 < algo.end) {
+	    			 algo.mStack.push(new Pair(pivot + 1, algo.end));
+	    			 temp += 1;
+	    		 }
+    		 }
+    		 algo.scale = temp;
+    		 RecView.getChildren().clear();
+  	   		 for(Rectangle j: mRecs) {
+  	   			 RecView.getChildren().add(j);
+  	   		 }
+    	 }
+     }
+     
+     // helper functions for the quick sort
+     public void QuickSortSwap(int i, int j) {
+    	 Rectangle temp = mRecs.get(i);
+    	 mRecs.set(i,mRecs.get(j));
+    	 mRecs.set(j,temp);
+     }
+     
+     public int QuickSortPartition(int start, int end) {
+    	 double pivot = mRecs.get(end).getHeight();
+    	 int pivotIndex = start;
+    	 for(int i = start; i < end; ++i) {
+    		 if(mRecs.get(i).getHeight() <= pivot) {
+    			 QuickSortSwap(i,pivotIndex);
+    			 pivotIndex ++;
+    		 }
+    	 }
+    	 QuickSortSwap(pivotIndex, end);
+    	 return pivotIndex;
+     }
+     
+     public void BinarySearchStep() {
+    	 if(algo.binaryLeft> algo.binaryRight) {
+    		 dr.stop();
+    	 } else {
+    		 int mid = (algo.binaryLeft + algo.binaryRight) / 2;
     		 if(mRecs.get(mid).getHeight() == target.getHeight()) {
     			 mRecs.get(mid).setFill(Color.RED);
     			 foundLabel = new Label();
+    			 foundLabel.setStyle("-fx-font: 24 arial;");
     			 foundLabel.setText("Target Found!");
+    			 foundLabel.setTextFill(Color.WHITE);
     			 detailView.getChildren().add(foundLabel);
     			 dr.stop();
     		 } else {
     			 if(mRecs.get(mid).getHeight() < target.getHeight()) {
-    				 mRecs.get(binaryRight).setFill(Color.BLACK);
-    				 binaryRight = mid;
+    				 mRecs.get(algo.binaryRight).setFill(Color.BLACK);
+    				 algo.binaryRight = mid;
     				 mRecs.get(mid).setFill(Color.YELLOW);
     			 } else {
-    				 mRecs.get(binaryLeft).setFill(Color.BLACK);
-    				 binaryLeft = mid;
-    				 mRecs.get(binaryLeft).setFill(Color.YELLOW);
+    				 mRecs.get(algo.binaryLeft).setFill(Color.BLACK);
+    				 algo.binaryLeft = mid;
+    				 mRecs.get(algo.binaryLeft).setFill(Color.YELLOW);
     			 }
     		 }
     	 }
      }
-     
-     
 }
